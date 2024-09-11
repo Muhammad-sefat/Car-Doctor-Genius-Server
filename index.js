@@ -1,7 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
-require("dotenv").config();
 const cookieParser = require("cookie-parser");
 var jwt = require("jsonwebtoken");
 const app = express();
@@ -57,6 +57,7 @@ async function run() {
 
     const serviceCollection = client.db("usersDB").collection("services");
     const bookingCollection = client.db("usersDB").collection("booking");
+    const productCollection = client.db("usersDB").collection("products");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -72,12 +73,18 @@ async function run() {
     });
 
     app.patch("/logout", async (req, res) => {
-      const user = req.body;
       res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     });
 
     app.get("/service", async (req, res) => {
-      const cursor = serviceCollection.find();
+      const filter = req.query;
+      const query = {};
+      const options = {
+        sort: {
+          price: filter.sort === "ascen" ? 1 : -1,
+        },
+      };
+      const cursor = serviceCollection.find(query, options);
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -102,6 +109,12 @@ async function run() {
       }
       const cursor = bookingCollection.find({ "newBooking.email": emails });
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/products", async (req, res) => {
+      const data = req.query;
+      const result = await productCollection.find(data).toArray();
       res.send(result);
     });
 
